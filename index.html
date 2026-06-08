@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>동내로88 해밀 주문관리</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; }
+  body { background:#f4f6fb; color:#1a2233; padding-bottom:70px; }
+  .screen { display:none; max-width:760px; margin:0 auto; padding:14px; }
+  .screen.active { display:block; }
+
+  /* 모드 선택 */
+  #modeScreen { display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; gap:18px; max-width:760px; margin:0 auto; }
+  #modeScreen h1 { font-size:26px; color:#1456c4; }
+  .mode-btn { width:80%; max-width:340px; padding:26px; font-size:20px; font-weight:bold; border:none; border-radius:16px; cursor:pointer; }
+  .mode-user { background:#1456c4; color:#fff; }
+  .mode-admin { background:#fff; color:#1456c4; border:2px solid #1456c4; }
+
+  /* 메뉴 */
+  .menu-grid { display:grid; grid-template-columns:1fr; gap:10px; }
+  .menu-card { background:#fff; border:1px solid #d8e0ef; border-radius:14px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
+  .menu-name { font-size:18px; font-weight:bold; }
+  .menu-name .hot{color:#c0392b;font-size:13px;} .menu-name .ice{color:#1769c0;font-size:13px;}
+  .qty-box { display:flex; align-items:center; gap:14px; }
+  .qty-btn { width:42px; height:42px; border:none; border-radius:10px; background:#1456c4; color:#fff; font-size:22px; font-weight:bold; cursor:pointer; }
+  .qty-btn.minus { background:#9fb1d0; }
+  .qty-num { font-size:20px; font-weight:bold; min-width:24px; text-align:center; }
+
+  .summary { background:#eaf1fc; border-radius:12px; padding:12px 16px; margin:12px 0; }
+  .summary .title { font-size:13px; color:#5a6b88; margin-bottom:6px; }
+  .summary .list { font-size:16px; font-weight:bold; }
+  .summary .total { color:#1456c4; margin-top:6px; }
+  .ordernum { font-size:15px; color:#1456c4; font-weight:bold; margin:6px 0; }
+
+  .nick-box { margin:10px 0; }
+  .nick-box input { width:100%; padding:14px; font-size:16px; border:1px solid #c7d3e8; border-radius:10px; }
+
+  .order-btn { width:100%; padding:18px; font-size:19px; font-weight:bold; background:#1456c4; color:#fff; border:none; border-radius:14px; cursor:pointer; margin-top:6px; }
+  .order-btn:active{transform:scale(.98);}
+
+  /* 하단 탭 */
+  .tabbar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #d8e0ef; display:flex; max-width:760px; margin:0 auto; }
+  .tabbar .tab { flex:1; text-align:center; padding:14px 4px; font-size:14px; font-weight:bold; color:#8090a8; cursor:pointer; position:relative; }
+  .tabbar .tab.active { color:#1456c4; }
+  .badge { position:absolute; top:6px; right:50%; transform:translateX(26px); background:#e23b3b; color:#fff; font-size:11px; border-radius:10px; padding:1px 6px; display:none; }
+  .badge.show{display:inline-block;}
+
+  /* 주문관리 */
+  .ord-card { background:#fff; border:1px solid #d8e0ef; border-left:5px solid #1456c4; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .ord-card.warn { border-left-color:#e23b3b; background:#fff3f3; }
+  .ord-card.done { border-left-color:#9fb1d0; opacity:.7; }
+  .ord-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .ord-no { font-size:18px; font-weight:bold; }
+  .ord-time { font-size:12px; color:#8090a8; }
+  .ord-items { font-size:15px; margin-bottom:8px; }
+  .ord-btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .ord-btns button { flex:1; min-width:70px; padding:10px; font-size:13px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; }
+  .b-done{background:#1456c4;color:#fff;} .b-wait{background:#f0a020;color:#fff;} .b-del{background:#e23b3b;color:#fff;} .b-edit{background:#e8eefa;color:#1456c4;}
+  .sec-title{font-size:14px;font-weight:bold;color:#5a6b88;margin:14px 0 8px;}
+
+  /* 집계 */
+  .total-box{background:#1456c4;color:#fff;border-radius:14px;padding:20px;text-align:center;margin-bottom:14px;}
+  .total-box .num{font-size:40px;font-weight:bold;} .total-box .lbl{font-size:13px;opacity:.85;}
+  .stat-row{background:#fff;border:1px solid #d8e0ef;border-radius:10px;padding:12px 14px;margin-bottom:7px;display:flex;justify-content:space-between;font-size:16px;}
+  .stat-row .c{font-weight:bold;color:#1456c4;}
+  .cal-head{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px;}
+  .cal-head button{background:#e8eefa;border:none;border-radius:8px;padding:8px 14px;font-weight:bold;color:#1456c4;cursor:pointer;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-cell{background:#fff;border:1px solid #e0e7f4;border-radius:8px;min-height:48px;padding:4px;font-size:12px;text-align:center;cursor:pointer;}
+  .cal-cell.empty{background:transparent;border:none;cursor:default;}
+  .cal-cell.sel{border:2px solid #1456c4;}
+  .cal-cell .d{font-weight:bold;} .cal-cell .q{color:#1456c4;font-weight:bold;font-size:13px;}
+  .reset-btn{width:100%;background:#fff;border:2px solid #e23b3b;color:#e23b3b;border-radius:10px;padding:14px;font-size:15px;font-weight:bold;margin-top:16px;cursor:pointer;}
+  .soundtoggle{margin-top:20px;text-align:center;font-size:12px;color:#8090a8;}
+  .soundtoggle button{background:#e8eefa;border:none;border-radius:8px;padding:6px 12px;color:#1456c4;font-weight:bold;cursor:pointer;font-size:12px;}
+
+  /* 알림 모달 */
+  .modal{display:none;position:fixed;inset:0;background:rgba(20,30,50,.5);z-index:50;justify-content:center;align-items:center;}
+  .modal.show{display:flex;}
+  .modal-box{background:#fff;border-radius:20px;width:80%;max-width:420px;height:66vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:24px;}
+  .modal-box .big{font-size:50px;font-weight:bold;color:#1456c4;margin-bottom:10px;}
+  .modal-box .msg{font-size:20px;margin-bottom:24px;}
+  .modal-box button{background:#1456c4;color:#fff;border:none;border-radius:12px;padding:14px 40px;font-size:18px;font-weight:bold;cursor:pointer;}
+  .pwbox{display:none;position:fixed;inset:0;background:rgba(20,30,50,.5);z-index:60;justify-content:center;align-items:center;}
+  .pwbox.show{display:flex;}
+  .pwinner{background:#fff;border-radius:16px;padding:24px;width:80%;max-width:320px;text-align:center;}
+  .pwinner input{width:100%;padding:14px;font-size:18px;text-align:center;border:1px solid #c7d3e8;border-radius:10px;margin:12px 0;}
+  .pwinner button{width:48%;padding:12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;}
+  .pw-ok{background:#1456c4;color:#fff;} .pw-cancel{background:#e8eefa;color:#1456c4;}
+</style>
+</head>
+<body>
+
+<!-- 모드 선택 -->
+<div id="modeScreen">
+  <h1>동내로88 해밀</h1>
+  <button class="mode-btn mode-user" id="btnUser">이용자 모드</button>
+  <button class="mode-btn mode-admin" id="btnAdmin">관리자 모드</button>
+</div>
+
+<!-- 주문 -->
+<div class="screen" id="orderScreen">
+  <div class="menu-grid" id="menuGrid"></div>
+  <div class="summary">
+    <div class="title">현재 주문 내역</div>
+    <div class="list" id="sumList">선택된 메뉴 없음</div>
+    <div class="total" id="sumTotal">총 0잔</div>
+  </div>
+  <div class="ordernum" id="myNo">내 주문번호: 1번</div>
+  <div class="nick-box"><input id="nick" placeholder="이름 또는 별명 (선택)" maxlength="12"></div>
+  <button class="order-btn" id="submitOrder">주문하기</button>
+  <div class="soundtoggle" id="soundWrap">🔔 이 기기 주문 알림음 <button id="soundBtn">꺼짐</button></div>
+</div>
+
+<!-- 주문관리 -->
+<div class="screen" id="manageScreen">
+  <div class="sec-title">⏳ 대기 중</div>
+  <div id="waitList"></div>
+  <div class="sec-title">✅ 완료</div>
+  <div id="doneList"></div>
+</div>
+
+<!-- 집계 -->
+<div class="screen" id="statScreen">
+  <div class="total-box"><div class="num" id="dayTotal">0</div><div class="lbl" id="dayLabel">오늘 판매</div></div>
+  <div id="statList"></div>
+  <div class="cal-head"><button id="prevM">◀</button><b id="calTitle"></b><button id="nextM">▶</button></div>
+  <div class="cal-grid" id="calGrid"></div>
+  <button class="reset-btn" id="resetBtn">집계 초기화</button>
+</div>
+
+<!-- 하단 탭 -->
+<div class="tabbar" id="tabbar"></div>
+
+<!-- 알림 모달 -->
+<div class="modal" id="modal"><div class="modal-box"><div class="big" id="mNo"></div><div class="msg" id="mMsg"></div><button id="mClose">확인</button></div></div>
+
+<!-- 비번 모달 -->
+<div class="pwbox" id="pwbox"><div class="pwinner"><div>집계 초기화 비밀번호</div><input id="pwInput" type="password" inputmode="numeric"><div><button class="pw-cancel" id="pwCancel">취소</button> <button class="pw-ok" id="pwOk">확인</button></div></div></div>
+
+<script>
+const MENU=[{id:'ame_h',name:'아메리카노',temp:'HOT'},{id:'ame_i',name:'아메리카노',temp:'ICE'},{id:'lat_h',name:'라떼',temp:'HOT'},{id:'lat_i',name:'라떼',temp:'ICE'},{id:'tea',name:'아이스티',temp:''},{id:'asa',name:'아샷추',temp:''}];
+const RESET_PW='1234';
+let mode='', cur={}, soundOn=false, calYM=null;
+
+function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function load(k,def){try{return JSON.parse(localStorage.getItem(k))??def;}catch(e){return def;}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function getOrders(){return load('hae_orders',[]);}
+function setOrders(o){save('hae_orders',o);}
+function getStats(){return load('hae_stats',{});}
+function setStats(s){save('hae_stats',s);}
+function menuLabel(m){return m.name+(m.temp?(' '+m.temp):'');}
+function itemsText(items){return Object.entries(items).filter(([k,v])=>v>0).map(([k,v])=>{const m=MENU.find(x=>x.id===k);return menuLabel(m)+' '+v;}).join(', ');}
+function itemsCount(items){return Object.values(items).reduce((a,b)=>a+(Number(b)||0),0);}
+
+// 다음 주문번호: 빈 번호 채우기
+function nextOrderNo(){const used=getOrders().map(o=>o.no).sort((a,b)=>a-b);let n=1;for(const u of used){if(u===n)n++;else if(u>n)break;}return n;}
+
+function renderMenu(){const g=document.getElementById('menuGrid');g.innerHTML='';MENU.forEach(m=>{const q=cur[m.id]||0;const card=document.createElement('div');card.className='menu-card';const tcls=m.temp==='HOT'?'hot':(m.temp==='ICE'?'ice':'');card.innerHTML=`<div class="menu-name">${m.name} ${m.temp?`<span class="${tcls}">${m.temp}</span>`:''}</div><div class="qty-box"><button class="qty-btn minus">−</button><span class="qty-num">${q}</span><button class="qty-btn">+</button></div>`;const[minus,plus]=card.querySelectorAll('button');minus.addEventListener('click',()=>{cur[m.id]=Math.max(0,(cur[m.id]||0)-1);renderMenu();renderSummary();});plus.addEventListener('click',()=>{cur[m.id]=(cur[m.id]||0)+1;renderMenu();renderSummary();});g.appendChild(card);});}
+function renderSummary(){const t=itemsCount(cur);const txt=itemsText(cur);document.getElementById('sumList').textContent=txt||'선택된 메뉴 없음';document.getElementById('sumTotal').textContent='총 '+t+'잔';document.getElementById('myNo').textContent='내 주문번호: '+nextOrderNo()+'번';}
+
+document.getElementById('submitOrder').addEventListener('click',()=>{const t=itemsCount(cur);if(t===0){alert('메뉴를 선택해 주세요');return;}const no=nextOrderNo();const nick=document.getElementById('nick').value.trim();const ords=getOrders();ords.push({no,items:{...cur},nick,status:'wait',time:Date.now()});setOrders(ords);if(soundOn)speak('주문이 완료되었습니다');showModal(no,nick,'주문이 접수되었습니다');cur={};document.getElementById('nick').value='';renderMenu();renderSummary();refresh();});
+
+function speak(text){try{const u=new SpeechSynthesisUtterance(text);u.lang='ko-KR';speechSynthesis.speak(u);}catch(e){}}
+function showModal(no,nick,msg){document.getElementById('mNo').textContent=(nick?nick:no+'번');document.getElementById('mMsg').textContent=msg;document.getElementById('modal').classList.add('show');}
+document.getElementById('mClose').addEventListener('click',()=>document.getElementById('modal').classList.remove('show'));
+
+// 주문관리
+function renderManage(){const ords=getOrders();const wait=ords.filter(o=>o.status==='wait').sort((a,b)=>a.no-b.no);const done=ords.filter(o=>o.status==='done').sort((a,b)=>a.no-b.no);const wl=document.getElementById('waitList'),dl=document.getElementById('doneList');wl.innerHTML='';dl.innerHTML='';const now=Date.now();wait.forEach(o=>{const min=Math.floor((now-o.time)/60000);const warn=min>=5;const c=document.createElement('div');c.className='ord-card'+(warn?' warn':'');c.innerHTML=`<div class="ord-head"><span class="ord-no">${o.no}번${o.nick?(' · '+o.nick):''}</span><span class="ord-time">${warn?'⚠ ':''}${min}분 경과</span></div><div class="ord-items">${itemsText(o.items)} (총 ${itemsCount(o.items)}잔)</div><div class="ord-btns"><button class="b-done">완료</button><button class="b-del">삭제</button></div>`;const[bd,bx]=c.querySelectorAll('button');bd.addEventListener('click',()=>complete(o.no));bx.addEventListener('click',()=>del(o.no));wl.appendChild(c);});if(wait.length===0)wl.innerHTML='<div style="color:#8090a8;text-align:center;padding:16px;">대기 주문 없음</div>';done.forEach(o=>{const c=document.createElement('div');c.className='ord-card done';c.innerHTML=`<div class="ord-head"><span class="ord-no">${o.no}번${o.nick?(' · '+o.nick):''}</span><span class="ord-time">완료</span></div><div class="ord-items">${itemsText(o.items)} (총 ${itemsCount(o.items)}잔)</div><div class="ord-btns"><button class="b-wait">대기로</button><button class="b-edit">수정</button><button class="b-del">삭제</button></div>`;const[bw,be,bx]=c.querySelectorAll('button');bw.addEventListener('click',()=>toWait(o.no));be.addEventListener('click',()=>editOrder(o.no));bx.addEventListener('click',()=>del(o.no));dl.appendChild(c);});if(done.length===0)dl.innerHTML='<div style="color:#8090a8;text-align:center;padding:16px;">완료 주문 없음</div>';}
+
+function complete(no){const ords=getOrders();const o=ords.find(x=>x.no===no);if(!o)return;o.status='done';setOrders(ords);addStat(o.items);speak((o.nick?o.nick+'님':no+'번 고객님')+' 주문하신 음료 나왔습니다');refresh();}
+function toWait(no){const ords=getOrders();const o=ords.find(x=>x.no===no);if(!o)return;o.status='wait';o.time=Date.now();setOrders(ords);subStat(o.items);refresh();}
+function del(no){if(!confirm(no+'번 주문을 삭제할까요?'))return;const ords=getOrders();const o=ords.find(x=>x.no===no);if(o&&o.status==='done')subStat(o.items);setOrders(ords.filter(x=>x.no!==no));refresh();}
+function editOrder(no){const ords=getOrders();const o=ords.find(x=>x.no===no);if(!o)return;subStat(o.items);const ni={};MENU.forEach(m=>{const v=prompt(menuLabel(m)+' 수량',o.items[m.id]||0);ni[m.id]=Math.max(0,parseInt(v)||0);});o.items=ni;setOrders(ords);addStat(o.items);refresh();}
+
+function addStat(items){const s=getStats();const k=todayKey();if(!s[k])s[k]={};Object.entries(items).forEach(([id,v])=>{s[k][id]=(Number(s[k][id])||0)+(Number(v)||0);});setStats(s);}
+function subStat(items){const s=getStats();const k=todayKey();if(!s[k])return;Object.entries(items).forEach(([id,v])=>{s[k][id]=Math.max(0,(Number(s[k][id])||0)-(Number(v)||0));});setStats(s);}
+
+function renderStat(){const s=getStats();const k=todayKey();const day=s[k]||{};let total=0;const list=document.getElementById('statList');list.innerHTML='';MENU.forEach(m=>{const c=Number(day[m.id])||0;total+=c;const row=document.createElement('div');row.className='stat-row';row.innerHTML=`<span>${menuLabel(m)}</span><span class="c">${c}잔</span>`;list.appendChild(row);});document.getElementById('dayTotal').textContent=total;document.getElementById('dayLabel').textContent='오늘 판매';renderCalendar();}
+
+function renderCalendar(){if(!calYM){const d=new Date();calYM={y:d.getFullYear(),m:d.getMonth()};}const{y,m}=calYM;document.getElementById('calTitle').textContent=y+'년 '+(m+1)+'월';const first=new Date(y,m,1).getDay();const days=new Date(y,m+1,0).getDate();const s=getStats();const g=document.getElementById('calGrid');g.innerHTML='';['일','월','화','수','목','금','토'].forEach(w=>{const c=document.createElement('div');c.className='cal-cell empty';c.style.cursor='default';c.innerHTML='<b style="font-size:11px;color:#8090a8">'+w+'</b>';g.appendChild(c);});for(let i=0;i<first;i++){const c=document.createElement('div');c.className='cal-cell empty';g.appendChild(c);}const tk=todayKey();for(let d=1;d<=days;d++){const key=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');const dayData=s[key]||{};const q=Object.values(dayData).reduce((a,b)=>a+(Number(b)||0),0);const c=document.createElement('div');c.className='cal-cell'+(key===tk?' sel':'');c.innerHTML=`<div class="d">${d}</div>${q>0?`<div class="q">${q}</div>`:''}`;c.addEventListener('click',()=>showDay(key));g.appendChild(c);}}
+function showDay(key){const s=getStats();const day=s[key]||{};let total=0;const list=document.getElementById('statList');list.innerHTML='';MENU.forEach(m=>{const c=Number(day[m.id])||0;total+=c;const row=document.createElement('div');row.className='stat-row';row.innerHTML=`<span>${menuLabel(m)}</span><span class="c">${c}잔 <button style="margin-left:8px;border:none;background:#e8eefa;color:#1456c4;border-radius:6px;padding:3px 8px;cursor:pointer;font-weight:bold;" data-id="${m.id}">수정</button></span>`;row.querySelector('button').addEventListener('click',()=>{const nv=prompt(menuLabel(m)+' 수량',c);if(nv===null)return;const s2=getStats();if(!s2[key])s2[key]={};s2[key][m.id]=Math.max(0,parseInt(nv)||0);setStats(s2);showDay(key);renderCalendar();});list.appendChild(row);});document.getElementById('dayTotal').textContent=total;document.getElementById('dayLabel').textContent=key+' 판매';}
+
+document.getElementById('prevM').addEventListener('click',()=>{calYM.m--;if(calYM.m<0){calYM.m=11;calYM.y--;}renderCalendar();});
+document.getElementById('nextM').addEventListener('click',()=>{calYM.m++;if(calYM.m>11){calYM.m=0;calYM.y++;}renderCalendar();});
+
+document.getElementById('resetBtn').addEventListener('click',()=>{document.getElementById('pwInput').value='';document.getElementById('pwbox').classList.add('show');});
+document.getElementById('pwCancel').addEventListener('click',()=>document.getElementById('pwbox').classList.remove('show'));
+document.getElementById('pwOk').addEventListener('click',()=>{if(document.getElementById('pwInput').value===RESET_PW){const s=getStats();delete s[todayKey()];setStats(s);setOrders([]);document.getElementById('pwbox').classList.remove('show');refresh();alert('오늘 집계가 초기화되었습니다');}else{alert('비밀번호가 틀렸습니다');}});
+
+document.getElementById('soundBtn').addEventListener('click',function(){soundOn=!soundOn;this.textContent=soundOn?'켜짐':'꺼짐';this.style.background=soundOn?'#1456c4':'#e8eefa';this.style.color=soundOn?'#fff':'#1456c4';save('hae_sound',soundOn);if(soundOn)speak('알림음이 켜졌습니다');});
+
+// 탭
+function buildTabs(){const t=document.getElementById('tabbar');let tabs=[];if(mode==='user'){tabs=[['order','주문'],['main','메인']];}else{tabs=[['order','주문'],['manage','주문관리'],['stat','집계'],['main','메인']];}t.innerHTML='';tabs.forEach(([id,label])=>{const d=document.createElement('div');d.className='tab';d.dataset.t=id;d.innerHTML=label+(id==='manage'?'<span class="badge" id="waitBadge"></span>':'');d.addEventListener('click',()=>{if(id==='main'){goMode();return;}showScreen(id);});t.appendChild(d);});}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const map={order:'orderScreen',manage:'manageScreen',stat:'statScreen'};document.getElementById(map[id]).classList.add('active');document.querySelectorAll('.tabbar .tab').forEach(t=>t.classList.toggle('active',t.dataset.t===id));if(id==='manage')renderManage();if(id==='stat'){calYM=null;renderStat();}}
+function goMode(){mode='';document.getElementById('modeScreen').style.display='flex';document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('tabbar').style.display='none';}
+
+function refresh(){renderSummary();const wait=getOrders().filter(o=>o.status==='wait').length;const b=document.getElementById('waitBadge');if(b){if(wait>0){b.textContent=wait;b.classList.add('show');}else b.classList.remove('show');}if(document.getElementById('manageScreen').classList.contains('active'))renderManage();if(document.getElementById('statScreen').classList.contains('active'))renderStat();}
+
+document.getElementById('btnUser').addEventListener('click',()=>{mode='user';startMode();});
+document.getElementById('btnAdmin').addEventListener('click',()=>{mode='admin';startMode();});
+function startMode(){document.getElementById('modeScreen').style.display='none';document.getElementById('tabbar').style.display='flex';document.getElementById('soundWrap').style.display=(mode==='user')?'block':'none';buildTabs();renderMenu();showScreen('order');refresh();}
+
+// init
+soundOn=load('hae_sound',false);document.getElementById('soundBtn').textContent=soundOn?'켜짐':'꺼짐';
+if(soundOn){const b=document.getElementById('soundBtn');b.style.background='#1456c4';b.style.color='#fff';}
+renderMenu();renderSummary();
+setInterval(()=>{if(document.getElementById('manageScreen').classList.contains('active'))renderManage();},30000);
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"e4f3199a7ddd4604b191af5850394a99","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
