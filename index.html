@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>동내로88 해밀 - 주문관리</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; }
+  body { background:#f4f6fa; color:#1a2b4a; padding-bottom:70px; }
+  .panel { display:none; padding:14px; max-width:760px; margin:0 auto; }
+  .panel.active { display:block; }
+  .menu-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .menu-card { background:#fff; border:2px solid #d6e0f0; border-radius:14px; padding:12px 8px; text-align:center; position:relative; }
+  .menu-card .name { font-size:16px; font-weight:bold; margin-bottom:6px; }
+  .menu-card .name .hot { color:#c0392b; }
+  .menu-card .name .ice { color:#2475d6; }
+  .qty-row { display:flex; align-items:center; justify-content:center; gap:10px; }
+  .qty-btn { width:38px; height:38px; border:none; border-radius:10px; background:#2475d6; color:#fff; font-size:22px; font-weight:bold; cursor:pointer; }
+  .qty-btn.minus { background:#9fb3cc; }
+  .qty-num { font-size:20px; font-weight:bold; min-width:26px; }
+  .menu-card.soldout .qty-row { visibility:hidden; }
+  .soldout-badge { display:none; position:absolute; inset:0; background:rgba(40,40,40,.78); color:#fff; border-radius:12px; align-items:center; justify-content:center; font-size:20px; font-weight:bold; letter-spacing:1px; }
+  .menu-card.soldout .soldout-badge { display:flex; }
+  .tumbler-box { background:#fff; border:2px solid #d6e0f0; border-radius:14px; padding:12px 14px; margin-top:10px; }
+  .tumbler-check { display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .tumbler-check input { width:24px; height:24px; }
+  .tumbler-check label { font-size:16px; font-weight:bold; cursor:pointer; }
+  .tumbler-note { font-size:12px; color:#c0392b; margin-top:8px; }
+  .cart-box { background:#eaf1fb; border-radius:14px; padding:12px 14px; margin-top:10px; }
+  .cart-box .title { font-size:13px; color:#5a6b88; margin-bottom:6px; }
+  .cart-list { font-size:15px; line-height:1.6; }
+  .cart-total { font-size:17px; font-weight:bold; margin-top:6px; }
+  .my-no { font-size:16px; font-weight:bold; color:#2475d6; margin-top:6px; }
+  .order-btn { width:100%; background:#2475d6; color:#fff; border:none; border-radius:14px; padding:16px; font-size:19px; font-weight:bold; margin-top:10px; cursor:pointer; }
+  .order-btn:disabled { background:#b9c6da; }
+  .overlay { display:none; position:fixed; inset:0; background:rgba(20,40,80,.6); z-index:100; align-items:center; justify-content:center; padding:16px; }
+  .overlay.show { display:flex; }
+  .done-modal { background:#fff; border-radius:24px; width:100%; max-width:520px; height:66vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; }
+  .done-modal .check { font-size:60px; }
+  .done-modal .msg { font-size:26px; font-weight:bold; margin-top:12px; }
+  .done-modal .bignum { font-size:90px; font-weight:900; color:#2475d6; line-height:1.1; margin:10px 0; }
+  .done-modal .remember { font-size:18px; color:#c0392b; font-weight:bold; margin-top:8px; }
+  .done-modal .closebtn { margin-top:24px; background:#2475d6; color:#fff; border:none; border-radius:14px; padding:14px 40px; font-size:18px; font-weight:bold; cursor:pointer; }
+  .col-title { font-size:15px; font-weight:bold; color:#5a6b88; margin:14px 0 8px; }
+  .order-card { background:#fff; border:2px solid #d6e0f0; border-radius:14px; padding:14px; margin-bottom:10px; }
+  .order-card.waiting { border-color:#2475d6; }
+  .order-card.warn { border-color:#e02424; background:#fff3f3; }
+  .order-card.done { opacity:.6; }
+  .oc-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .oc-no { font-size:22px; font-weight:900; color:#2475d6; }
+  .oc-time { font-size:12px; color:#8a97ad; }
+  .oc-time.warn { color:#e02424; font-weight:bold; }
+  .tumbler-badge { display:inline-block; background:#1fa463; color:#fff; font-size:13px; font-weight:bold; padding:4px 10px; border-radius:20px; }
+  .oc-items { font-size:15px; line-height:1.6; margin-bottom:10px; }
+  .oc-btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .oc-btns button { flex:1; min-width:70px; border:none; border-radius:10px; padding:11px 6px; font-size:14px; font-weight:bold; cursor:pointer; }
+  .b-call { background:#f39c12; color:#fff; }
+  .b-done { background:#2475d6; color:#fff; }
+  .b-wait { background:#9fb3cc; color:#fff; }
+  .b-del { background:#fff; color:#e02424; border:2px solid #e02424; }
+  .empty { text-align:center; color:#aab4c6; padding:24px; font-size:14px; }
+  .total-box { background:#1a2b4a; color:#fff; border-radius:18px; padding:22px; text-align:center; margin-bottom:14px; }
+  .total-box .num { font-size:46px; font-weight:900; }
+  .total-box .label { font-size:13px; opacity:.8; }
+  .stat-row { background:#fff; border-radius:10px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; font-size:15px; }
+  .stat-row .cnt { font-weight:bold; color:#2475d6; }
+  .sec-title { font-size:14px; font-weight:bold; color:#5a6b88; margin:16px 0 8px; }
+  .soldout-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .so-toggle { border:2px solid #d6e0f0; background:#fff; border-radius:10px; padding:12px 6px; font-size:14px; font-weight:bold; cursor:pointer; }
+  .so-toggle.off { background:#e02424; color:#fff; border-color:#e02424; }
+  .reset-btn { width:100%; background:#fff; border:2px solid #e02424; color:#e02424; border-radius:12px; padding:14px; font-size:15px; font-weight:bold; margin-top:18px; cursor:pointer; }
+  .tabs { position:fixed; bottom:0; left:0; right:0; display:flex; background:#fff; border-top:2px solid #e0e7f2; z-index:50; }
+  .tab { flex:1; padding:14px 0; text-align:center; font-size:14px; font-weight:bold; color:#9aa6ba; cursor:pointer; position:relative; }
+  .tab.active { color:#2475d6; }
+  .tab .badge { position:absolute; top:6px; right:30%; background:#e02424; color:#fff; font-size:11px; font-weight:bold; min-width:18px; height:18px; line-height:18px; border-radius:9px; padding:0 4px; display:none; }
+  .tab .badge.show { display:inline-block; }
+</style>
+</head>
+<body>
+
+<div class="panel active" id="orderPanel">
+  <div class="menu-grid" id="menuGrid"></div>
+  <div class="tumbler-box">
+    <div class="tumbler-check">
+      <input type="checkbox" id="tumblerChk">
+      <label for="tumblerChk">🥤 텀블러 사용</label>
+    </div>
+    <div class="tumbler-note">※ 텀블러가 아닌 음료는 분리해서 주문해 주세요.</div>
+  </div>
+  <div class="cart-box">
+    <div class="title">현재 주문 내역</div>
+    <div class="cart-list" id="cartList">선택된 메뉴가 없습니다.</div>
+    <div class="cart-total" id="cartTotal">총 0잔</div>
+    <div class="my-no" id="myNo">내 주문번호: 1번</div>
+  </div>
+  <button class="order-btn" id="orderBtn" disabled>주문하기</button>
+</div>
+
+<div class="panel" id="manPanel">
+  <div class="col-title">⏳ 대기 중</div>
+  <div id="waitList"></div>
+  <div class="col-title">✅ 완료</div>
+  <div id="doneList"></div>
+</div>
+
+<div class="panel" id="statPanel">
+  <div class="total-box">
+    <div class="num" id="totalNum">0</div>
+    <div class="label">오늘 총 판매 잔</div>
+  </div>
+  <div class="sec-title">메뉴별 판매</div>
+  <div id="statList"></div>
+  <div class="sec-title">메뉴 품절 관리</div>
+  <div class="soldout-grid" id="soldoutGrid"></div>
+  <button class="reset-btn" id="resetBtn">오늘 데이터 초기화</button>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="done-modal">
+    <div class="check">✅</div>
+    <div class="msg">주문이 완료되었습니다</div>
+    <div class="bignum" id="modalNum">1번</div>
+    <div class="remember">⚠ 본인 주문번호를 꼭 기억해 주세요!</div>
+    <button class="closebtn" id="modalClose">확인</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="orderPanel">주문</div>
+  <div class="tab" data-tab="manPanel">주문관리<span class="badge" id="manBadge">0</span></div>
+  <div class="tab" data-tab="statPanel">집계</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC989VKQk_3A9A8mKgu-Xb_8PL-xTwWLzw",
+  authDomain: "medihub-cafe.firebaseapp.com",
+  databaseURL: "https://medihub-cafe-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "medihub-cafe",
+  storageBucket: "medihub-cafe.firebasestorage.app",
+  messagingSenderId: "492629329248",
+  appId: "1:492629329248:web:d1596f3ae376b9ba0a8a05"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const MENUS = [
+  { id:'am_hot', name:'아메리카노', temp:'HOT' },
+  { id:'am_ice', name:'아메리카노', temp:'ICE' },
+  { id:'la_hot', name:'라떼', temp:'HOT' },
+  { id:'la_ice', name:'라떼', temp:'ICE' },
+  { id:'ice_tea', name:'아이스티', temp:'' },
+  { id:'ashotchu', name:'아샷추', temp:'' },
+  { id:'espresso', name:'에스프레소', temp:'' }
+];
+
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+const DKEY = todayKey();
+const ROOT = db.ref('hemil/'+DKEY);
+const ORDERS = ROOT.child('orders');
+const SOLDOUT = db.ref('hemil_soldout');
+const CALL = db.ref('hemil_call');
+
+let orders = {};
+let soldout = {};
+let cart = {};
+MENUS.forEach(m=>cart[m.id]=0);
+
+// ===== 음성 =====
+let voicesReady=false, koMaleVoice=null;
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  // 한국어 남성 우선
+  koMaleVoice = vs.find(v=>/ko/i.test(v.lang)&&/male|남|injoon|남성/i.test(v.name))
+    || vs.find(v=>/ko/i.test(v.lang))
+    || null;
+  voicesReady = vs.length>0;
+}
+if('speechSynthesis' in window){
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang='ko-KR'; u.rate=0.95; u.pitch=0.7; u.volume=1;
+    if(koMaleVoice) u.voice=koMaleVoice;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+// "1번"을 한 글자씩이 아니라 자연스럽게 읽히도록 텍스트 보정
+function callText(no){ return no+'번 음료 준비되었습니다.'; }
+
+// ===== 다음 주문번호 (빈 번호 채우기) =====
+function nextNo(){
+  const used = new Set(Object.values(orders).map(o=>Number(o.no)).filter(n=>!isNaN(n)));
+  let n=1; while(used.has(n)) n++;
+  return n;
+}
+
+// ===== 렌더 =====
+function menuLabel(m){
+  if(m.temp==='HOT') return m.name+' <span class="hot">(HOT)</span>';
+  if(m.temp==='ICE') return m.name+' <span class="ice">(ICE)</span>';
+  return m.name;
+}
+function renderMenu(){
+  const g=document.getElementById('menuGrid'); g.innerHTML='';
+  MENUS.forEach(m=>{
+    const so = !!soldout[m.id];
+    const card=document.createElement('div');
+    card.className='menu-card'+(so?' soldout':'');
+    card.innerHTML='<div class="name">'+menuLabel(m)+'</div>'+
+      '<div class="qty-row"><button class="qty-btn minus">-</button>'+
+      '<span class="qty-num">'+cart[m.id]+'</span>'+
+      '<button class="qty-btn">+</button></div>'+
+      '<div class="soldout-badge">SOLD OUT</div>';
+    const btns=card.querySelectorAll('.qty-btn');
+    btns[0].addEventListener('click',()=>{ if(so)return; if(cart[m.id]>0)cart[m.id]--; renderMenu(); renderCart(); });
+    btns[1].addEventListener('click',()=>{ if(so)return; cart[m.id]++; renderMenu(); renderCart(); });
+    g.appendChild(card);
+  });
+}
+function renderCart(){
+  let total=0, lines=[];
+  MENUS.forEach(m=>{ if(cart[m.id]>0){ total+=cart[m.id]; const t=m.temp?'('+m.temp+')':''; lines.push(m.name+t+' '+cart[m.id]+'잔'); } });
+  document.getElementById('cartList').innerHTML = lines.length? lines.join('<br>') : '선택된 메뉴가 없습니다.';
+  document.getElementById('cartTotal').textContent = '총 '+total+'잔';
+  document.getElementById('myNo').textContent = '내 주문번호: '+nextNo()+'번';
+  document.getElementById('orderBtn').disabled = total===0;
+}
+function fmtItems(items){
+  return items.map(it=>{ const m=MENUS.find(x=>x.id===it.id); const t=m&&m.temp?'('+m.temp+')':''; return (m?m.name:it.id)+t+' '+it.qty+'잔'; }).join(', ');
+}
+function minPassed(ts){ return Math.floor((Date.now()-ts)/60000); }
+
+function renderManage(){
+  const wl=document.getElementById('waitList'), dl=document.getElementById('doneList');
+  wl.innerHTML=''; dl.innerHTML='';
+  const arr=Object.entries(orders).map(([k,o])=>({key:k,...o})).sort((a,b)=>a.no-b.no);
+  let waiting=0, doneCnt=0;
+  arr.forEach(o=>{
+    const mins=minPassed(o.ts||Date.now());
+    const warn = !o.done && mins>=5;
+    const card=document.createElement('div');
+    card.className='order-card '+(o.done?'done':(warn?'warn':'waiting'));
+    card.innerHTML='<div class="oc-head"><span class="oc-no">'+o.no+'번</span>'+
+      (o.tumbler?'<span class="tumbler-badge">🥤 텀블러</span>':'')+
+      '<span class="oc-time'+(warn?' warn':'')+'">'+(o.done?'완료':(mins+'분 경과'))+'</span></div>'+
+      '<div class="oc-items">'+fmtItems(o.items)+'</div>';
+    const btnWrap=document.createElement('div'); btnWrap.className='oc-btns';
+    if(!o.done){
+      const bCall=document.createElement('button'); bCall.className='b-call'; bCall.textContent='🔊 음료 나왔습니다';
+      bCall.addEventListener('click',()=>{ CALL.set({no:o.no, ts:Date.now()}); });
+      const bDone=document.createElement('button'); bDone.className='b-done'; bDone.textContent='완료';
+      bDone.addEventListener('click',()=>{ ORDERS.child(o.key).update({done:true}); });
+      const bDel=document.createElement('button'); bDel.className='b-del'; bDel.textContent='삭제';
+      bDel.addEventListener('click',()=>{ if(confirm(o.no+'번 주문을 삭제할까요?')) ORDERS.child(o.key).remove(); });
+      btnWrap.appendChild(bCall); btnWrap.appendChild(bDone); btnWrap.appendChild(bDel);
+      wl.appendChild(card); card.appendChild(btnWrap); waiting++;
+    } else {
+      const bWait=document.createElement('button'); bWait.className='b-wait'; bWait.textContent='대기로';
+      bWait.addEventListener('click',()=>{ ORDERS.child(o.key).update({done:false}); });
+      const bDel=document.createElement('button'); bDel.className='b-del'; bDel.textContent='삭제';
+      bDel.addEventListener('click',()=>{ if(confirm(o.no+'번 주문을 삭제할까요?')) ORDERS.child(o.key).remove(); });
+      btnWrap.appendChild(bWait); btnWrap.appendChild(bDel);
+      dl.appendChild(card); card.appendChild(btnWrap); doneCnt++;
+    }
+  });
+  if(waiting===0) wl.innerHTML='<div class="empty">대기 중인 주문이 없습니다.</div>';
+  if(doneCnt===0) dl.innerHTML='<div class="empty">완료된 주문이 없습니다.</div>';
+  const badge=document.getElementById('manBadge');
+  badge.textContent=waiting;
+  badge.classList.toggle('show', waiting>0);
+}
+function renderStat(){
+  let total=0; const cnt={};
+  MENUS.forEach(m=>cnt[m.id]=0);
+  Object.values(orders).forEach(o=>{ (o.items||[]).forEach(it=>{ cnt[it.id]=(cnt[it.id]||0)+Number(it.qty); total+=Number(it.qty); }); });
+  document.getElementById('totalNum').textContent=total;
+  const sl=document.getElementById('statList'); sl.innerHTML='';
+  MENUS.forEach(m=>{ const t=m.temp?'('+m.temp+')':''; const row=document.createElement('div'); row.className='stat-row'; row.innerHTML='<span>'+m.name+t+'</span><span class="cnt">'+(cnt[m.id]||0)+'잔</span>'; sl.appendChild(row); });
+  const sg=document.getElementById('soldoutGrid'); sg.innerHTML='';
+  MENUS.forEach(m=>{ const so=!!soldout[m.id]; const t=m.temp?'('+m.temp+')':''; const b=document.createElement('button'); b.className='so-toggle'+(so?' off':''); b.textContent=m.name+t+(so?' · 품절':' · 정상'); b.addEventListener('click',()=>{ SOLDOUT.child(m.id).set(!so); }); sg.appendChild(b); });
+}
+
+// ===== 주문하기 =====
+document.getElementById('orderBtn').addEventListener('click',()=>{
+  const items=[]; MENUS.forEach(m=>{ if(cart[m.id]>0) items.push({id:m.id, qty:cart[m.id]}); });
+  if(items.length===0) return;
+  const no=nextNo();
+  const tumbler=document.getElementById('tumblerChk').checked;
+  ORDERS.push({ no:no, items:items, tumbler:tumbler, done:false, ts:Date.now() });
+  document.getElementById('modalNum').textContent=no+'번';
+  document.getElementById('overlay').classList.add('show');
+  MENUS.forEach(m=>cart[m.id]=0);
+  document.getElementById('tumblerChk').checked=false;
+  renderMenu(); renderCart();
+});
+document.getElementById('modalClose').addEventListener('click',()=>{ document.getElementById('overlay').classList.remove('show'); });
+
+// ===== 초기화 =====
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  const pw=prompt('초기화 비밀번호를 입력하세요.');
+  if(pw!=='1234'){ if(pw!==null) alert('비밀번호가 틀렸습니다.'); return; }
+  if(confirm('오늘 데이터를 모두 초기화할까요?')) ORDERS.remove();
+});
+
+// ===== 탭 =====
+let currentTab='orderPanel';
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    const id=tab.getAttribute('data-tab');
+    document.getElementById(id).classList.add('active');
+    currentTab=id;
+    // 사용자 제스처로 음성 권한 활성화
+    if('speechSynthesis' in window){ try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);}catch(e){} }
+  });
+});
+
+// ===== Firebase 실시간 리스너 =====
+ORDERS.on('value', snap=>{
+  orders = snap.val() || {};
+  renderCart(); renderManage(); renderStat();
+});
+SOLDOUT.on('value', snap=>{
+  soldout = snap.val() || {};
+  renderMenu(); renderStat();
+});
+// 음료 호출 신호 → 주문관리 탭 띄운 기기에서 음성
+let lastCallTs=0;
+CALL.on('value', snap=>{
+  const v=snap.val(); if(!v||!v.ts) return;
+  if(v.ts===lastCallTs) return; lastCallTs=v.ts;
+  if(currentTab==='manPanel'){
+    const txt=callText(v.no);
+    speak(txt);
+    setTimeout(()=>speak(txt), 2200);
+  }
+});
+
+// 5분 경과 갱신
+setInterval(renderManage, 30000);
+
+// 초기 렌더
+renderMenu(); renderCart();
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"e4f3199a7ddd4604b191af5850394a99","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
